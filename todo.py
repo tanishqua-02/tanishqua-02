@@ -1,3 +1,6 @@
+#Tanishqua Taware
+#email : tanishquataware@gmail.com
+
 import mysql.connector as mysql
 
 # Establishing Connection
