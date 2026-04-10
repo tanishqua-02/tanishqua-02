@@ -241,11 +241,23 @@ async def seed_database():
         "name": "Test User",
         "email": "test@krishikala.com",
         "password": hash_password("Test@123"),
+        "is_admin": False,
         "created_at": "2024-01-01T00:00:00+00:00"
     }
     
-    await db.users.insert_one(test_user)
+    # Create admin user
+    admin_user = {
+        "id": "user-admin-1",
+        "name": "Admin",
+        "email": "admin@krishikala.com",
+        "password": hash_password("Admin@123"),
+        "is_admin": True,
+        "created_at": "2024-01-01T00:00:00+00:00"
+    }
+    
+    await db.users.insert_many([test_user, admin_user])
     print("Created test user: test@krishikala.com / Test@123")
+    print("Created admin user: admin@krishikala.com / Admin@123")
     
     print("Database seeding completed!")
 

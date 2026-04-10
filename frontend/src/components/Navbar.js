@@ -37,6 +37,11 @@ const Navbar = () => {
             <Link to="/products" className="hover:text-amber-200 transition" data-testid="nav-products">
               {language === 'en' ? 'Products' : 'उत्पाद'}
             </Link>
+            {user && user.is_admin && (
+              <Link to="/admin" className="hover:text-amber-200 transition" data-testid="nav-admin">
+                {language === 'en' ? 'Admin' : 'एडमिन'}
+              </Link>
+            )}
             {user && (
               <Link to="/orders" className="hover:text-amber-200 transition" data-testid="nav-orders">
                 {language === 'en' ? 'My Orders' : 'मेरे ऑर्डर'}

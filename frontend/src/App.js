@@ -13,6 +13,8 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
 import './App.css';
 
 // Protected Route Component
@@ -28,6 +30,21 @@ const ProtectedRoute = ({ children }) => {
   }
   
   return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+  
+  return user && user.is_admin ? children : <Navigate to="/" />;
 };
 
 function App() {
@@ -74,6 +91,22 @@ function App() {
                     <ProtectedRoute>
                       <Profile />
                     </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/products"
+                  element={
+                    <AdminRoute>
+                      <AdminProducts />
+                    </AdminRoute>
                   }
                 />
               </Routes>

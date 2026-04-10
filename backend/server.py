@@ -54,6 +54,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: EmailStr
+    is_admin: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserResponse(BaseModel):
@@ -184,6 +185,17 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=404, detail="User not found")
     return user_id
 
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Dependency to verify admin user"""
+    token = credentials.credentials
+    user_id = verify_jwt_token(token)
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.get('is_admin', False):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user_id
+
 
 # ==================== ROUTES ====================
 
@@ -260,13 +272,13 @@ async def get_categories():
     return categories
 
 @api_router.post("/categories", response_model=Category)
-async def create_category(category_data: CategoryCreate, user_id: str = Depends(get_current_user)):
+async def create_category(category_data: CategoryCreate, user_id: str = Depends(get_admin_user)):
     category = Category(**category_data.model_dump())
     await db.categories.insert_one(category.model_dump())
     return category
 
 @api_router.delete("/categories/{category_id}")
-async def delete_category(category_id: str, user_id: str = Depends(get_current_user)):
+async def delete_category(category_id: str, user_id: str = Depends(get_admin_user)):
     result = await db.categories.delete_one({"id": category_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -307,7 +319,7 @@ async def get_product(product_id: str):
     return Product(**product)
 
 @api_router.post("/products", response_model=Product)
-async def create_product(product_data: ProductCreate, user_id: str = Depends(get_current_user)):
+async def create_product(product_data: ProductCreate, user_id: str = Depends(get_admin_user)):
     product = Product(**product_data.model_dump())
     product_doc = product.model_dump()
     product_doc['created_at'] = product_doc['created_at'].isoformat()
@@ -315,7 +327,7 @@ async def create_product(product_data: ProductCreate, user_id: str = Depends(get
     return product
 
 @api_router.put("/products/{product_id}", response_model=Product)
-async def update_product(product_id: str, product_data: ProductUpdate, user_id: str = Depends(get_current_user)):
+async def update_product(product_id: str, product_data: ProductUpdate, user_id: str = Depends(get_admin_user)):
     # Get existing product
     existing_product = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not existing_product:
@@ -335,7 +347,7 @@ async def update_product(product_id: str, product_data: ProductUpdate, user_id: 
     return Product(**updated_product)
 
 @api_router.delete("/products/{product_id}")
-async def delete_product(product_id: str, user_id: str = Depends(get_current_user)):
+async def delete_product(product_id: str, user_id: str = Depends(get_admin_user)):
     result = await db.products.delete_one({"id": product_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
