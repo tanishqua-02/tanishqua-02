@@ -360,7 +360,19 @@ async def delete_product(product_id: str, user_id: str = Depends(get_admin_user)
 async def get_cart(user_id: str = Depends(get_current_user)):
     cart_items = await db.cart.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
     
-    # Fetch product details for each cart item
+    if not cart_items:
+        return []
+    
+    # Extract all product IDs
+    product_ids = [item['product_id'] for item in cart_items]
+    
+    # Fetch all products in one query (optimization: reduces N+1 queries to 2 queries)
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(1000)
+    
+    # Create product lookup dictionary for O(1) access
+    product_map = {p['id']: p for p in products}
+    
+    # Build result with cart items and their products
     result = []
     for item in cart_items:
         if isinstance(item.get('added_at'), str):
@@ -368,8 +380,8 @@ async def get_cart(user_id: str = Depends(get_current_user)):
         
         cart_item = CartItem(**item)
         
-        # Get product
-        product_doc = await db.products.find_one({"id": item['product_id']}, {"_id": 0})
+        # Get product from map
+        product_doc = product_map.get(item['product_id'])
         if product_doc:
             if isinstance(product_doc.get('created_at'), str):
                 product_doc['created_at'] = datetime.fromisoformat(product_doc['created_at'])
